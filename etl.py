@@ -50,8 +50,10 @@ def load_taxi(file):
         d['pickup_datetime'] = datetime.strptime(d['pickup_datetime'], '%Y-%m-%d %H:%M:%S %Z')
         arr.append(d.copy())
 
-    # TODO: insert `arr` into `db.taxi` and print the number of records inserted.
-    # Use load_airbnb as an example. This takes 2 lines of codes.
+        print("taxi document fileds: ", arr[0].keys())
+
+    inserted_ids = db.taxi.insert_many(arr).inserted_ids
+    print(len(inserted_ids), "taxi documents inserted")
 
 
 if __name__ == "__main__":

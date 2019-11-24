@@ -23,7 +23,7 @@ def query1(minFare, maxFare):
         An array of documents.
     """
     docs = db.taxi.find(
-        # TODO: implement me
+        {"fare_amount": {"$gte": minFare, "$lte": maxFare}}
     )
 
     result = [doc for doc in docs]
@@ -77,8 +77,10 @@ def query3():
         An array of documents.
     """
     docs = db.airbnb.aggregate(
-        # TODO: implement me
-    )
+        {"$group": 
+            {"_id": "neighborhood_group", 
+             "$avg": "price"}}
+    ).sort()
 
     result = [doc for doc in docs]
     return result
@@ -95,22 +97,33 @@ def query4():
         An array of documents.
     """
     docs = db.taxi.aggregate(
-        # TODO: implement me
-    )
+        {"$group":
+            {"_id": {"$hour": "pickup_datetime"},
+             "avg_fare": {"$avg": "fare_amount"},
+             "avg_distance":
+                {"$avg":
+                    {"$abs":
+                        {"$add":
+                            [{"$abs": {"$subtract":
+                                       ["dropoff_latitude",
+                                        "pickup_latitude"]}},
+                             {"$abs": {"$subtract":
+                                       ["dropoff_longitude",
+                                        "pickup_longitude"]}}]}}},
+             "count": {"$sum": 1}}).sort("avg_fare", -1)
     result = [doc for doc in docs]
     return result
 
 
-def query5():
-    """ Finds airbnbs within 1000 meters from location (longitude, latitude) using geoNear. 
-        Find average fare for each hour.
-        Find average manhattan distance travelled for each hour.
-        Count total number of rides per pickup hour.
-        Sort by average fare in descending order.
+def query5(latitude, longitude):
+    """ Finds airbnbs within 1000 meters from location (longitude, latitude) using geoNear.
+
+    Args:
+        latitude: A float representing latitude coordinate
+        longitude: A float represeting longitude coordinate
 
     Projection:
         dist
-        location
         name
         neighbourhood
         neighbourhood_group
@@ -119,8 +132,28 @@ def query5():
 
 
     """
-    docs = db.airbnb.aggregate(
-        # TODO: implement me
-    )
+    docs = db.airbnb.aggregate([
+       {
+           '$geoNear': {
+               'near': {'type': 'Point', 'coordinates': [longitude, latitude]},
+               'distanceField': 'dist.calculated',
+               'maxDistance': 1000,
+               'spherical': False
+           }
+       },
+       {
+           '$project': {
+               '_id': 0,
+               'dist': 1,
+               'name': 1,
+               'neighbourhood': 1,
+               'neighbourhood_group': 1,
+               'price': 1,
+               'room_type': 1
+           }
+       },
+       {
+           '$sort': {'dist': 1}
+       }])
     result = [doc for doc in docs]
     return result
